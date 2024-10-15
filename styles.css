@@ -1,0 +1,111 @@
+/* Reset de estilos básicos */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #333; /* Fondo oscuro para la interfaz */
+    font-family: Arial, sans-serif;
+}
+
+#main-container {
+    display: flex;
+    align-items: flex-start; /* Alinea el contenido al inicio */
+    gap: 20px; /* Espacio entre botones y editor */
+}
+
+#button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espacio entre los botones */
+}
+
+#button-container button {
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+#button-container button:hover {
+    background-color: #45a049;
+}
+
+#editor-output-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 800px;
+}
+
+#container {
+    width: 100%;
+    height: 600px;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Sombra para destacar el editor */
+}
+
+#run-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #1f8822;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+#run-button:hover {
+    background-color: #45a049;
+}
+
+#output {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    background-color: #222;
+    color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    min-height: 200px;
+    max-height: 200px; /* Limita la altura máxima */
+    overflow-y: auto; /* Agrega una barra de desplazamiento vertical */
+}
+
+#copy-button.copied {
+    background-color: #1f8822; /* Cambia el color cuando se copia */
+    color: white;
+    transition: background-color 0.3s ease, transform 0.2s;
+    transform: scale(1.05); /* Pequeño efecto de escala */
+}
+
+#copy-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #1f8822;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.2s;
+}
+
+#copy-button:hover {
+    background-color: #1f8822;
+}
+
+

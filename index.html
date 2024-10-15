@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OakLand</title>
+    <!-- Enlazar el archivo CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="main-container">
+        <!-- Contenedor para los botones a la izquierda -->
+        <div id="button-container">
+            <button id="open-file-button">Abrir archivo</button>
+            <button id="save-file-button">Guardar archivo</button>
+            <button id="error-report-button">Reporte de errores</button>
+            <button id="symbol-table-button">Tabla de símbolos</button>
+        </div>
+        
+        <!-- Contenedor del editor y la salida -->
+        <div id="editor-output-container">
+            <div id="container"></div>
+            <button id="run-button">Run Code</button>
+            <div id="output"></div>
+            <button id="copy-button">Copiar al portapapeles</button>
+        </div>
+    </div>
+
+    <!-- CDN de Monaco Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0/min/vs/loader.min.js"></script>
+    <!-- Enlazar el archivo JavaScript externo -->
+    <script src="script.js" type="module"></script>
+</body>
+</html>
