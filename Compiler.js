@@ -12,17 +12,18 @@ export default class Compiler extends Visitor{
         expressionStmt.expr.accept(this);
     }
 
-    visitNumber(number){
-        this.codeBuilder.li(r.T0, number.value);
-        this.codeBuilder.push(r.T0);
+    visitPrimitive(node) {
+        this.codeBuilder.comment(`Primitivo: ${node.value}`);
+        this.codeBuilder.pushConstant({ type: node.type, value: node.value });
+        this.codeBuilder.comment(`Fin Primitivo: ${node.value}`);
     }
 
     visitBinaryOperation(binaryOperation){
         binaryOperation.left.accept(this);
         binaryOperation.right.accept(this);
 
-        this.codeBuilder.pop(r.T1);
         this.codeBuilder.pop(r.T0);
+        this.codeBuilder.pop(r.T1);
 
         switch(binaryOperation.operator){
             case '+':
@@ -30,7 +31,7 @@ export default class Compiler extends Visitor{
                 this.codeBuilder.push(r.T0);
                 break;
             case '-':
-                this.codeBuilder.sub(r.T0, r.T0, r.T1);
+                this.codeBuilder.sub(r.T0, r.T1, r.T0);
                 this.codeBuilder.push(r.T0);
                 break;
             case '*':
@@ -38,10 +39,15 @@ export default class Compiler extends Visitor{
                 this.codeBuilder.push(r.T0);
                 break;
             case '/':
-                this.codeBuilder.div(r.T0, r.T1, r.T2);
+                this.codeBuilder.div(r.T0, r.T1, r.T0);
+                this.codeBuilder.push(r.T0);
+                break;
+            case '%':
+                this.codeBuilder.rem(r.T0, r.T1, r.T0);
                 this.codeBuilder.push(r.T0);
                 break;
         }
+        this.codeBuilder.pushObject({ type: 'INT', length: 4 });
     }
 
     visitUnaryOperation(unaryOperation){
@@ -57,6 +63,7 @@ export default class Compiler extends Visitor{
                 this.codeBuilder.li(r.T1, 0);
                 this.codeBuilder.sub(r.T0, r.T1, r.T0);
                 this.codeBuilder.push(r.T0);
+                this.codeBuilder.pushObject({ type: 'INT', length: 4 });
                 break;
         }
     }
@@ -67,9 +74,15 @@ export default class Compiler extends Visitor{
 
     visitPrint(print){
         for (const expr of print.exprs) {
+            this.codeBuilder.comment("Print");
             expr.accept(this);
-            this.codeBuilder.pop(r.A0);
-            this.codeBuilder.printInt(r.A0);
+            const object = this.codeBuilder.popObject(r.A0);
+            const tipoPrint = {
+                'INT': () => this.codeBuilder.printInt(),
+                'STRING': () => this.codeBuilder.printString()
+            }
+            console.log(object);
+            tipoPrint[object.type]();
         }
     }
 };

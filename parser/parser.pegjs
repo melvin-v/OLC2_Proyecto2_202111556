@@ -1,10 +1,11 @@
 {{
   import Agrupation from '../nodes/Agrupation.js';
   import BinaryOperation from '../nodes/BinaryOperation.js';
-  import Number from '../nodes/Number.js';
   import Print from '../nodes/Print.js';
   import UnaryOperation from '../nodes/UnaryOperation.js';
   import ExpressionStmt from '../nodes/ExpressionStmt.js';
+  import Primitive from '../nodes/Primitive.js';
+  import { types as t } from '../tools/types.js';
 }}
 
 programa = _ dcl:Declaracion* _ { return dcl }
@@ -59,7 +60,7 @@ Expresion = Asignacion
 Asignacion = asignado:Llamada _ "=" _ asgn:Asignacion 
   { 
 
-    console.log({asignado})
+    //console.log({asignado})
 
     if (asignado instanceof nodos.ReferenciaVariable) {
       return crearNodo('asignacion', { id: asignado.id, asgn })
@@ -73,45 +74,93 @@ Asignacion = asignado:Llamada _ "=" _ asgn:Asignacion
 
 
   }
-/ Comparacion
+/ AndOr
 
 
-Comparacion = izq:Suma expansion:(
-  _ op:("<=" / "==") _ der:Suma { return { tipo: op, der } }
+AndOr = izq:Comparacion expansion:(
+  _ op:("&&" / "||") _ der:Comparacion { return { tipo: op, der } }
 )* { 
   return expansion.reduce(
     (operacionAnterior, operacionActual) => {
-      const { tipo, der } = operacionActual
-      return new BinaryOperation(operacionAnterior, tipo, der, location())
+      const { tipo, der } = operacionActual;
+      return new BinaryOperation(operacionAnterior, tipo, der, location());
     },
     izq
-  )
+  );
 }
 
+Comparacion = izq:MayorMenor expansion:(
+  _ op:("<=" / ">=") _ der:MayorMenor { return { tipo: op, der } }
+)* { 
+  return expansion.reduce(
+    (operacionAnterior, operacionActual) => {
+      const { tipo, der } = operacionActual;
+      return new BinaryOperation(operacionAnterior, tipo, der, location());
+    },
+    izq
+  );
+}
+
+MayorMenor = izq:IgualQue expansion:(
+  _ op:("<" / ">") _ der:IgualQue { return { tipo: op, der } }
+)* { 
+  return expansion.reduce(
+    (operacionAnterior, operacionActual) => {
+      const { tipo, der } = operacionActual;
+      return new BinaryOperation(operacionAnterior, tipo, der, location());
+    },
+    izq
+  );
+}
+
+IgualQue = izq:Suma expansion:(
+  _ op:("==" / "!=") _ der:Suma { return { tipo: op, der } }
+)* { 
+  return expansion.reduce(
+    (operacionAnterior, operacionActual) => {
+      const { tipo, der } = operacionActual;
+      return new BinaryOperation(operacionAnterior, tipo, der, location());
+    },
+    izq
+  );
+}
 
 Suma = izq:Multiplicacion expansion:(
   _ op:("+" / "-") _ der:Multiplicacion { return { tipo: op, der } }
 )* { 
   return expansion.reduce(
     (operacionAnterior, operacionActual) => {
-      const { tipo, der } = operacionActual
-      return new BinaryOperation(operacionAnterior, tipo, der, location())
+      const { tipo, der } = operacionActual;
+      return new BinaryOperation(operacionAnterior, tipo, der, location());
     },
     izq
-  )
+  );
 }
 
-Multiplicacion = izq:Unaria expansion:(
-  _ op:("*" / "/") _ der:Unaria { return { tipo: op, der } }
+Multiplicacion = izq:Modulo expansion:(
+  _ op:("*" / "/") _ der:Modulo { return { tipo: op, der } }
 )* {
     return expansion.reduce(
       (operacionAnterior, operacionActual) => {
-        const { tipo, der } = operacionActual
-        return new BinaryOperation(operacionAnterior, tipo, der, location())
+        const { tipo, der } = operacionActual;
+        return new BinaryOperation(operacionAnterior, tipo, der, location());
       },
       izq
-    )
+    );
 }
+
+Modulo = izq:Unaria expansion:(
+  _ op:("%") _ der:Unaria { return { tipo: op, der } }
+)* {
+    return expansion.reduce(
+      (operacionAnterior, operacionActual) => {
+        const { tipo, der } = operacionActual;
+        return new BinaryOperation(operacionAnterior, tipo, der, location());
+      },
+      izq
+    );
+}
+
 
 Unaria = "-" _ num:Numero { return new UnaryOperation(num, "-", location()) }
   / "!" _ num:Numero { return new UnaryOperation(num, "!", location()) }
@@ -136,7 +185,7 @@ Llamada = objetivoInicial:Numero operaciones:(
     objetivoInicial
   )
 
-  console.log('llamada', {op}, {text: text()});
+  //console.log('llamada', {op}, {text: text()});
 
 return op
 }
@@ -144,7 +193,8 @@ return op
 Argumentos = arg:Expresion _ args:("," _ exp:Expresion { return exp })* { return [arg, ...args] }
 
 
-Numero = [0-9]+ {return new Number(parseInt(text(), 10), location())}
+Numero = [0-9]+ {return new Primitive(parseInt(text(), 10), t.INT, location())}
+  / "\"" texto:([^\"])* "\"" { return new Primitive(texto.join(''), t.STRING, location()) }
   / "(" _ exp:Expresion _ ")" { return new Agrupation(exp, location()) }
   / "new" _ id:Identificador _ "(" _ args:Argumentos? _ ")" { return crearNodo('instancia', { id, args: args || [] }) }
   / id:Identificador { return crearNodo('referenciaVariable', { id }) }

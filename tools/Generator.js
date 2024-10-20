@@ -1,10 +1,12 @@
 import { registers as r } from "./registers.js";
 import Instruction from "./Instruction.js";
+import { stringTo32BitsArray } from "./utils.js";
 
 export default class Generator {
 
     constructor() {
-        this.instrucciones = []
+        this.instrucciones = [];
+        this.objectStack = [];
     }
 
     add(rd, rs1, rs2) {
@@ -39,6 +41,10 @@ export default class Generator {
         this.instrucciones.push(new Instruction('li', rd, inmediato))
     }
 
+    rem(rd, rs1, rs2) {
+        this.instrucciones.push(new Instruction('rem', rd, rs1, rs2))
+    }
+
     push(rd = r.T0) {
         this.addi(r.SP, r.SP, -4) // 4 bytes = 32 bits
         this.sw(rd, r.SP)
@@ -69,6 +75,26 @@ export default class Generator {
 
     }
 
+    printString(rd = r.A0) {
+
+        if (rd !== r.A0) {
+            this.push(r.A0)
+            this.add(r.A0, rd, r.ZERO)
+        }
+
+        this.li(r.A7, 4)
+        this.ecall()
+
+        if (rd !== r.A0) {
+            this.pop(r.A0)
+        }
+    }
+
+    endProgram() {
+        this.li(r.A7, 10)
+        this.ecall()
+    }
+
     endProgram() {
         this.li(r.A7, 10)
         this.ecall()
@@ -78,7 +104,59 @@ export default class Generator {
         this.instrucciones.push(new Instruction(`# ${text}`))
     }
 
+    pushConstant(object) {
+        let length = 0;
+
+        switch (object.type) {
+            case 'INT':
+                this.li(r.T0, object.value);
+                this.push()
+                length = 4;
+                break;
+
+            case 'STRING':
+                const stringArray = stringTo32BitsArray(object.value).reverse();
+
+                stringArray.forEach((block32bits) => {
+                    this.li(r.T0, block32bits);
+                    this.push(r.T0);
+                });
+
+                length = stringArray.length * 4;
+                break;
+
+            default:
+                break;
+        }
+
+        this.pushObject({ type: object.type, length });
+    }
+
+    pushObject(object) {
+        this.objectStack.push(object);
+    }
+
+    popObject(rd = r.T0) {
+        const object = this.objectStack.pop();
+
+
+        switch (object.type) {
+            case 'INT':
+                this.pop(rd);
+                break;
+
+            case 'STRING':
+                this.addi(rd, r.SP, 0);
+                this.addi(r.SP, r.SP, object.length);
+            default:
+                break;
+        }
+
+        return object;
+    }
+
     toString() {
+        this.endProgram();
         return `.text
 main:
     ${this.instrucciones.map(instruccion => `${instruccion}`).join('\n')}

@@ -6,6 +6,9 @@ export default class Print extends Expression {
         this.exprs = exprs;
         this.location = location
     }
+    /*
+        @param {Visitor} visitor
+    */
     accept(visitor) {
         visitor.visitPrint(this);
     }
