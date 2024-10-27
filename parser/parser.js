@@ -10,6 +10,10 @@
   import UnaryOperation from '../nodes/UnaryOperation.js';
   import ExpressionStmt from '../nodes/ExpressionStmt.js';
   import Primitive from '../nodes/Primitive.js';
+  import Declaration from '../nodes/Declaration.js';
+  import Assignment from '../nodes/Assignment.js';
+  import ReferenceVariable from '../nodes/ReferenceVariable.js';
+  import Block from '../nodes/Block.js';
   import { types as t } from '../tools/types.js';
 
 function peg$subclass(child, parent) {
@@ -277,7 +281,7 @@ function peg$parse(input, options) {
   var peg$f2 = function(dcl) { return dcl };
   var peg$f3 = function(dcl) { return dcl };
   var peg$f4 = function(stmt) { return stmt };
-  var peg$f5 = function(id, exp) { return crearNodo('declaracionVariable', { id, exp }) };
+  var peg$f5 = function(id, exp) { return new Declaration(null, id, exp, location()) };
   var peg$f6 = function(id, params, bloque) { return crearNodo('dclFunc', { id, params: params || [], bloque }) };
   var peg$f7 = function(id, dcls) { return crearNodo('dclClase', { id, dcls }) };
   var peg$f8 = function(dcl) { return dcl };
@@ -299,26 +303,13 @@ function peg$parse(input, options) {
   var peg$f22 = function(head, tail) {
       return [head, ...tail.map(([_, __,___, exp]) => exp)];
   };
-  var peg$f23 = function(dcls) { return crearNodo('bloque', { dcls }) };
+  var peg$f23 = function(dcls) { return new Block(dcls, location()) };
   var peg$f24 = function(dcl) { return dcl };
   var peg$f25 = function(exp) { return exp };
   var peg$f26 = function() { return null };
   var peg$f27 = function() { return text() };
   var peg$f28 = function(asignado, asgn) { 
-
-    //console.log({asignado})
-
-    if (asignado instanceof nodos.ReferenciaVariable) {
-      return crearNodo('asignacion', { id: asignado.id, asgn })
-    }
-
-    if (!(asignado instanceof nodos.Get)) {
-      throw new Error('Solo se pueden asignar valores a propiedades de objetos')
-    }
-    
-    return crearNodo('set', { objetivo: asignado.objetivo, propiedad: asignado.propiedad, valor: asgn })
-
-
+    return new Assignment(asignado, asgn, location());
   };
   var peg$f29 = function(izq, op, der) { return { tipo: op, der } };
   var peg$f30 = function(izq, expansion) { 
@@ -418,7 +409,7 @@ return op
   var peg$f51 = function(texto) { return new Primitive(texto.join(''), t.STRING, location()) };
   var peg$f52 = function(exp) { return new Agrupation(exp, location()) };
   var peg$f53 = function(id, args) { return crearNodo('instancia', { id, args: args || [] }) };
-  var peg$f54 = function(id) { return crearNodo('referenciaVariable', { id }) };
+  var peg$f54 = function(id) { return new ReferenceVariable(id, location()) };
   var peg$currPos = options.peg$currPos | 0;
   var peg$savedPos = peg$currPos;
   var peg$posDetailsCache = [{ line: 1, column: 1 }];
@@ -1562,7 +1553,7 @@ return op
     var s0, s1, s2, s3, s4, s5;
 
     s0 = peg$currPos;
-    s1 = peg$parseLlamada();
+    s1 = peg$parseIdentificador();
     if (s1 !== peg$FAILED) {
       s2 = peg$parse_();
       if (input.charCodeAt(peg$currPos) === 61) {

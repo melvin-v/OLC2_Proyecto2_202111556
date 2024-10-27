@@ -1,13 +1,28 @@
 import { registers as r } from "./registers.js";
 import Instruction from "./Instruction.js";
-import { stringTo32BitsArray } from "./utils.js";
+import { stringTo1ByteArray } from "./utils.js";
+import {buildings} from "./buildings.js";
 
 export default class Generator {
 
     constructor() {
         this.instrucciones = [];
         this.objectStack = [];
+        this.depth = 0;
+        this._usedBuildings = new Set();
+        this._labelCounter = 0;
     }
+
+    getLabel() {
+        return `L${this._labelCounter++}`
+    }
+
+    addLabel(label) {
+        label = label || this.getLabel()
+        this.instrucciones.push(new Instruction(`${label}:`))
+        return label
+    }
+
 
     add(rd, rs1, rs2) {
         this.instrucciones.push(new Instruction('add', rd, rs1, rs2))
@@ -33,10 +48,48 @@ export default class Generator {
         this.instrucciones.push(new Instruction('sw', rs1, `${inmediato}(${rs2})`))
     }
 
+    sb(rs1, rs2, inmediato = 0) {
+        this.instrucciones.push(new Instruction('sb', rs1, `${inmediato}(${rs2})`))
+    }
+
+
     lw(rd, rs1, inmediato = 0) {
         this.instrucciones.push(new Instruction('lw', rd, `${inmediato}(${rs1})`))
     }
+    lb(rd, rs1, inmediato = 0) {
+        this.instrucciones.push(new Instruction('lb', rd, `${inmediato}(${rs1})`))
+    }
 
+    // --- Saltos condicionales
+
+
+    /**
+     * ==
+     */
+    beq(rs1, rs2, label) {
+        this.instrucciones.push(new Instruction('beq', rs1, rs2, label))
+    }
+
+    /**
+     * !=
+     */
+    bne(rs1, rs2, label) {
+        this.instrucciones.push(new Instruction('bne', rs1, rs2, label))
+    }
+
+    /**
+     * <
+     */
+    blt(rs1, rs2, label) {
+        this.instrucciones.push(new Instruction('blt', rs1, rs2, label))
+    }
+
+    /**
+     * >=
+     */
+    bge(rs1, rs2, label) {
+        this.instrucciones.push(new Instruction('bge', rs1, rs2, label))
+    }
     li(rd, inmediato) {
         this.instrucciones.push(new Instruction('li', rd, inmediato))
     }
@@ -55,8 +108,28 @@ export default class Generator {
         this.addi(r.SP, r.SP, 4)
     }
 
+    jal(label) {
+        this.instrucciones.push(new Instruction('jal', label))
+    }
+
+    j(label) {
+        this.instrucciones.push(new Instruction('j', label))
+    }
+
+    ret() {
+        this.instrucciones.push(new Instruction('ret'))
+    }
+
     ecall() {
         this.instrucciones.push(new Instruction('ecall'))
+    }
+
+    callBuiltin(buildingName) {
+        if (!buildings[buildingName]) {
+            throw new Error(`Builtin ${buildingName} not found`)
+        }
+        this._usedBuildings.add(buildingName)
+        this.jal(buildingName)
     }
 
     printInt(rd = r.A0) {
@@ -104,32 +177,30 @@ export default class Generator {
         this.instrucciones.push(new Instruction(`# ${text}`))
     }
 
-    pushConstant(object) {
-        let length = 0;
+    pushContent(object) {
+        const length = 4;
 
         switch (object.type) {
             case 'INT':
                 this.li(r.T0, object.value);
                 this.push()
-                length = 4;
                 break;
 
             case 'STRING':
-                const stringArray = stringTo32BitsArray(object.value).reverse();
-
-                stringArray.forEach((block32bits) => {
-                    this.li(r.T0, block32bits);
-                    this.push(r.T0);
+                const stringArray = stringTo1ByteArray(object.value);
+                this.push(r.HP);
+                stringArray.forEach((charCode) => {
+                    this.li(r.T0, charCode);
+                    this.sb(r.T0, r.HP);
+                    this.addi(r.HP, r.HP, 1);
                 });
-
-                length = stringArray.length * 4;
                 break;
 
             default:
                 break;
         }
 
-        this.pushObject({ type: object.type, length });
+        this.pushObject({ type: object.type, length, depth: this.depth });
     }
 
     pushObject(object) {
@@ -146,18 +217,63 @@ export default class Generator {
                 break;
 
             case 'STRING':
-                this.addi(rd, r.SP, 0);
-                this.addi(r.SP, r.SP, object.length);
+                this.pop(rd);
+                break;
             default:
                 break;
         }
 
         return object;
     }
+    // Manejo de entorno
+    newScope() {
+        this.depth++;
+    }
+
+    endScope() {
+        let byteOffset = 0;
+
+        for (let i = this.objectStack.length - 1; i >= 0; i--) {
+            if (this.objectStack[i].depth === this.depth) {
+                byteOffset += this.objectStack[i].length;
+                this.objectStack.pop();
+            } else {
+                break;
+            }
+        }
+        this.depth--
+
+        return byteOffset;
+    }
+
+    tagObject(id){
+        this.objectStack[this.objectStack.length - 1].id = id;
+        console.log(this.objectStack);
+    }
+
+    getObject(id){
+        let byteOffset = 0;
+        for (let i = this.objectStack.length - 1; i >= 0; i--) {
+            if (this.objectStack[i].id === id) {
+                return [byteOffset, this.objectStack[i]];
+            }
+            byteOffset += this.objectStack[i].length;
+        }
+
+        throw new Error(`Variable ${id} not found`);
+    }
 
     toString() {
+        Array.from(this._usedBuildings).forEach(buildingName => {
+            this.addLabel(buildingName)
+            buildings[buildingName](this)
+            this.ret()
+        })
         this.endProgram();
-        return `.text
+        return `.data
+        heap:
+        .text
+        la ${r.HP}, heap
 main:
     ${this.instrucciones.map(instruccion => `${instruccion}`).join('\n')}
 `

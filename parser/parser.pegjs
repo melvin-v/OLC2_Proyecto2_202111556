@@ -5,6 +5,10 @@
   import UnaryOperation from '../nodes/UnaryOperation.js';
   import ExpressionStmt from '../nodes/ExpressionStmt.js';
   import Primitive from '../nodes/Primitive.js';
+  import Declaration from '../nodes/Declaration.js';
+  import Assignment from '../nodes/Assignment.js';
+  import ReferenceVariable from '../nodes/ReferenceVariable.js';
+  import Block from '../nodes/Block.js';
   import { types as t } from '../tools/types.js';
 }}
 
@@ -16,7 +20,7 @@ Declaracion =
             / dcl:FuncDcl _ { return dcl }
             / stmt:Stmt _ { return stmt }
 
-VarDcl = "var" _ id:Identificador _ "=" _ exp:Expresion _ ";" { return crearNodo('declaracionVariable', { id, exp }) }
+VarDcl = "var" _ id:Identificador _ "=" _ exp:Expresion _ ";" { return new Declaration(null, id, exp, location()) }
 
 FuncDcl = "function" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ bloque:Bloque { return crearNodo('dclFunc', { id, params: params || [], bloque }) }
 
@@ -47,7 +51,7 @@ VariasExpresiones
       return [head, ...tail.map(([_, __,___, exp]) => exp)];
   }
   
-Bloque = "{" _ dcls:Declaracion* _ "}" { return crearNodo('bloque', { dcls }) }
+Bloque = "{" _ dcls:Declaracion* _ "}" { return new Block(dcls, location()) }
 
 ForInit = dcl:VarDcl { return dcl }
         / exp:Expresion _ ";" { return exp }
@@ -57,22 +61,9 @@ Identificador = [a-zA-Z][a-zA-Z0-9]* { return text() }
 
 Expresion = Asignacion
 
-Asignacion = asignado:Llamada _ "=" _ asgn:Asignacion 
+Asignacion = asignado:Identificador _ "=" _ asgn:Asignacion 
   { 
-
-    //console.log({asignado})
-
-    if (asignado instanceof nodos.ReferenciaVariable) {
-      return crearNodo('asignacion', { id: asignado.id, asgn })
-    }
-
-    if (!(asignado instanceof nodos.Get)) {
-      throw new Error('Solo se pueden asignar valores a propiedades de objetos')
-    }
-    
-    return crearNodo('set', { objetivo: asignado.objetivo, propiedad: asignado.propiedad, valor: asgn })
-
-
+    return new Assignment(asignado, asgn, location());
   }
 / AndOr
 
@@ -197,7 +188,7 @@ Numero = [0-9]+ {return new Primitive(parseInt(text(), 10), t.INT, location())}
   / "\"" texto:([^\"])* "\"" { return new Primitive(texto.join(''), t.STRING, location()) }
   / "(" _ exp:Expresion _ ")" { return new Agrupation(exp, location()) }
   / "new" _ id:Identificador _ "(" _ args:Argumentos? _ ")" { return crearNodo('instancia', { id, args: args || [] }) }
-  / id:Identificador { return crearNodo('referenciaVariable', { id }) }
+  / id:Identificador { return new ReferenceVariable(id, location()) }
 
 
 _ = ([ \t\n\r] / Comentarios)* 

@@ -30,5 +30,5 @@ export const registers = {
     T3: 't3',
     T4: 't4',
     T5: 't5',
-    T6: 't6'
+    HP: 't6',
 };
