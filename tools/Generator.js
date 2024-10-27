@@ -1,7 +1,7 @@
 import { registers as r } from "./registers.js";
 import Instruction from "./Instruction.js";
 import { stringTo1ByteArray } from "./utils.js";
-import {buildings} from "./buildings.js";
+import { builtins } from "./builtins.js";
 
 export default class Generator {
 
@@ -9,7 +9,7 @@ export default class Generator {
         this.instrucciones = [];
         this.objectStack = [];
         this.depth = 0;
-        this._usedBuildings = new Set();
+        this._usedBuiltins = new Set()
         this._labelCounter = 0;
     }
 
@@ -124,12 +124,12 @@ export default class Generator {
         this.instrucciones.push(new Instruction('ecall'))
     }
 
-    callBuiltin(buildingName) {
-        if (!buildings[buildingName]) {
-            throw new Error(`Builtin ${buildingName} not found`)
+    callBuiltin(builtinName) {
+        if (!builtins[builtinName]) {
+            throw new Error(`Builtin ${builtinName} not found`)
         }
-        this._usedBuildings.add(buildingName)
-        this.jal(buildingName)
+        this._usedBuiltins.add(builtinName)
+        this.jal(builtinName)
     }
 
     printInt(rd = r.A0) {
@@ -264,12 +264,15 @@ export default class Generator {
     }
 
     toString() {
-        Array.from(this._usedBuildings).forEach(buildingName => {
-            this.addLabel(buildingName)
-            buildings[buildingName](this)
+        this.comment('Fin del programa')
+        this.endProgram()
+        this.comment('Builtins')
+
+        Array.from(this._usedBuiltins).forEach(builtinName => {
+            this.addLabel(builtinName)
+            builtins[builtinName](this)
             this.ret()
         })
-        this.endProgram();
         return `.data
         heap:
         .text

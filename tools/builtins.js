@@ -1,5 +1,10 @@
 import { registers as r } from "./registers.js";
+
 export const concatString = (code) => {
+    // A0 -> dirección en heap de la primera cadena
+    // A1 -> dirección en heap de la segunda cadena
+    // result -> push en el stack la dirección en heap de la cadena concatenada
+
     code.comment('Guardando en el stack la dirección en heap de la cadena concatenada')
     code.push(r.HP);
 
@@ -32,6 +37,6 @@ export const concatString = (code) => {
     code.addi(r.HP, r.HP, 1)
 }
 
-export const buildings = {
+export const builtins = {
     concatString: concatString
 }
