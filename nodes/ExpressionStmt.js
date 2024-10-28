@@ -1,9 +1,9 @@
 import Expression from "../abstract/Expression.js"
 
 export default class ExpressionStmt extends Expression{
-    constructor(expression, location){
+    constructor( exp, location ) {
         super();
-        this.expr = expression;
+        this.exp = exp;
         this.location = location;
     }
     accept(visitor) {

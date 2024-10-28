@@ -1,14 +1,11 @@
 import Expression from "../abstract/Expression.js"
 
 export default class Print extends Expression {
-    constructor(exprs, location) {
+    constructor( exps, location ) {
         super();
-        this.exprs = exprs;
-        this.location = location
+        this.exps = exps;
+        this.location = location;
     }
-    /*
-        @param {Visitor} visitor
-    */
     accept(visitor) {
         visitor.visitPrint(this);
     }

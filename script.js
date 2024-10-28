@@ -16,7 +16,7 @@ require(['vs/editor/editor.main'], () => {
         console.log(sentencias);
         const compiler = new Compiler();
         sentencias.forEach(sentencia => sentencia.accept(compiler));
-        document.getElementById('output').innerText = compiler.codeBuilder.toString();
+        document.getElementById('output').innerText = compiler.code.toString();
     });
 
     document.getElementById('open-file-button').addEventListener('click', () => {

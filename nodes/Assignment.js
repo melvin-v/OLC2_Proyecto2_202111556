@@ -2,10 +2,10 @@ import Expression from '../abstract/Expression.js';
 
 export default class Assignment extends Expression {
 
-    constructor( id, expr, location ) {
+    constructor( id, asgn, location ) {
         super();
         this.id = id;
-        this.expr = expr;
+        this.asgn = asgn;
         this.location = location;
     }
 

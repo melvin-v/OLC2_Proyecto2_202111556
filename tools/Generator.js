@@ -1,14 +1,15 @@
-import { registers as r } from "./registers.js";
-import Instruction from "./Instruction.js";
-import { stringTo1ByteArray } from "./utils.js";
 import { builtins } from "./builtins.js";
+import { registers as r } from "./registers.js";
+import { stringTo1ByteArray, numberToF32 } from "./utils.js";
+import Instruction from "./Instruction.js";
 
-export default class Generator {
+export class Generator {
 
     constructor() {
-        this.instrucciones = [];
-        this.objectStack = [];
-        this.depth = 0;
+        this.instrucciones = []
+        this.objectStack = []
+        this.instrucionesDeFunciones = []
+        this.depth = 0
         this._usedBuiltins = new Set()
         this._labelCounter = 0;
     }
@@ -22,7 +23,6 @@ export default class Generator {
         this.instrucciones.push(new Instruction(`${label}:`))
         return label
     }
-
 
     add(rd, rs1, rs2) {
         this.instrucciones.push(new Instruction('add', rd, rs1, rs2))
@@ -52,10 +52,10 @@ export default class Generator {
         this.instrucciones.push(new Instruction('sb', rs1, `${inmediato}(${rs2})`))
     }
 
-
     lw(rd, rs1, inmediato = 0) {
         this.instrucciones.push(new Instruction('lw', rd, `${inmediato}(${rs1})`))
     }
+
     lb(rd, rs1, inmediato = 0) {
         this.instrucciones.push(new Instruction('lb', rd, `${inmediato}(${rs1})`))
     }
@@ -90,17 +90,27 @@ export default class Generator {
     bge(rs1, rs2, label) {
         this.instrucciones.push(new Instruction('bge', rs1, rs2, label))
     }
+
     li(rd, inmediato) {
         this.instrucciones.push(new Instruction('li', rd, inmediato))
     }
 
-    rem(rd, rs1, rs2) {
-        this.instrucciones.push(new Instruction('rem', rd, rs1, rs2))
+    la(rd, label) {
+        this.instrucciones.push(new Instruction('la', rd, label))
     }
 
     push(rd = r.T0) {
         this.addi(r.SP, r.SP, -4) // 4 bytes = 32 bits
         this.sw(rd, r.SP)
+    }
+
+    pushFloat(rd = r.FT0) {
+        this.addi(r.SP, r.SP, -4) // 4 bytes = 32 bits
+        this.fsw(rd, r.SP)
+    }
+
+    rem(rd, rs1, rs2) {
+        this.instrucciones.push(new Instruction('rem', rd, rs1, rs2))
     }
 
     pop(rd = r.T0) {
@@ -110,6 +120,10 @@ export default class Generator {
 
     jal(label) {
         this.instrucciones.push(new Instruction('jal', label))
+    }
+
+    jalr(rd, rs1, imm) {
+        this.instrucciones.push(new Instruction('jalr', rd, rs1, imm))
     }
 
     j(label) {
@@ -148,6 +162,11 @@ export default class Generator {
 
     }
 
+    printChar() {
+        this.li(r.A7, 11)
+        this.ecall()
+    }
+
     printString(rd = r.A0) {
 
         if (rd !== r.A0) {
@@ -168,37 +187,52 @@ export default class Generator {
         this.ecall()
     }
 
-    endProgram() {
-        this.li(r.A7, 10)
-        this.ecall()
-    }
-
     comment(text) {
         this.instrucciones.push(new Instruction(`# ${text}`))
     }
 
-    pushContent(object) {
-        const length = 4;
+    pushConstant(object) {
+        let length = 0;
 
         switch (object.type) {
-            case 'INT':
-                this.li(r.T0, object.value);
+            case 'int':
+                this.li(r.T0, object.valor);
                 this.push()
+                length = 4;
                 break;
 
-            case 'STRING':
-                const stringArray = stringTo1ByteArray(object.value);
+            case 'string':
+                const stringArray = stringTo1ByteArray(object.valor);
+
+                this.comment(`Pushing string ${object.valor}`);
+                // this.addi(r.T0, r.HP, 4);
+                // this.push(r.T0);
                 this.push(r.HP);
+
                 stringArray.forEach((charCode) => {
                     this.li(r.T0, charCode);
+                    // this.push(r.T0);
+                    // this.addi(r.HP, r.HP, 4);
+                    // this.sw(r.T0, r.HP);
+
                     this.sb(r.T0, r.HP);
                     this.addi(r.HP, r.HP, 1);
                 });
+
+                length = 4;
                 break;
 
             case 'boolean':
                 this.li(r.T0, object.valor ? 1 : 0);
                 this.push(r.T0);
+                length = 4;
+                break;
+
+            case 'float':
+                const ieee754 = numberToF32(object.valor);
+                this.li(r.T0, ieee754);
+                this.push(r.T0);
+                length = 4;
                 break;
 
             default:
@@ -209,7 +243,16 @@ export default class Generator {
     }
 
     pushObject(object) {
-        this.objectStack.push(object);
+        // this.objectStack.push(object);
+        this.objectStack.push({
+            ...object,
+            depth: this.depth,
+        });
+    }
+
+    popFloat(rd = r.FT0) {
+        this.flw(rd, r.SP)
+        this.addi(r.SP, r.SP, 4)
     }
 
     popObject(rd = r.T0) {
@@ -217,12 +260,18 @@ export default class Generator {
 
 
         switch (object.type) {
-            case 'INT':
+            case 'int':
                 this.pop(rd);
                 break;
 
-            case 'STRING':
+            case 'string':
                 this.pop(rd);
+                break;
+            case 'boolean':
+                this.pop(rd);
+                break;
+            case 'float':
+                this.popFloat(rd);
                 break;
             default:
                 break;
@@ -230,9 +279,17 @@ export default class Generator {
 
         return object;
     }
-    // Manejo de entorno
+
+    getTopObject() {
+        return this.objectStack[this.objectStack.length - 1];
+    }
+
+    /*
+     FUNCIONES PARA ENTORNOS
+    */
+
     newScope() {
-        this.depth++;
+        this.depth++
     }
 
     endScope() {
@@ -251,12 +308,12 @@ export default class Generator {
         return byteOffset;
     }
 
-    tagObject(id){
+
+    tagObject(id) {
         this.objectStack[this.objectStack.length - 1].id = id;
-        console.log(this.objectStack);
     }
 
-    getObject(id){
+    getObject(id) {
         let byteOffset = 0;
         for (let i = this.objectStack.length - 1; i >= 0; i--) {
             if (this.objectStack[i].id === id) {
@@ -273,6 +330,9 @@ export default class Generator {
         this.endProgram()
         this.comment('Builtins')
 
+        this.comment('Funciones foraneas')
+        this.instrucionesDeFunciones.forEach(instruccion => this.instrucciones.push(instruccion))
+
         Array.from(this._usedBuiltins).forEach(builtinName => {
             this.addLabel(builtinName)
             builtins[builtinName](this)
@@ -280,11 +340,74 @@ export default class Generator {
         })
         return `.data
         heap:
-        .text
-        la ${r.HP}, heap
+.text
+
+# inicializando el heap pointer
+    la ${r.HP}, heap
+
 main:
     ${this.instrucciones.map(instruccion => `${instruccion}`).join('\n')}
 `
     }
 
+
+    // --- Instruciones flotantes
+
+    fadd(rd, rs1, rs2) {
+        this.instrucciones.push(new Instruction('fadd.s', rd, rs1, rs2))
+    }
+
+    fsub(rd, rs1, rs2) {
+        this.instrucciones.push(new Instruction('fsub.s', rd, rs1, rs2))
+    }
+
+    fmul(rd, rs1, rs2) {
+        this.instrucciones.push(new Instruction('fmul.s', rd, rs1, rs2))
+    }
+
+    fdiv(rd, rs1, rs2) {
+        this.instrucciones.push(new Instruction('fdiv.s', rd, rs1, rs2))
+    }
+
+    fli(rd, inmediato) {
+        this.instrucciones.push(new Instruction('fli.s', rd, inmediato))
+    }
+
+    fmv(rd, rs1) {
+        this.instrucciones.push(new Instruction('fmv.s', rd, rs1))
+    }
+
+    flw(rd, rs1, inmediato = 0) {
+        this.instrucciones.push(new Instruction('flw', rd, `${inmediato}(${rs1})`))
+    }
+
+    fsw(rs1, rs2, inmediato = 0) {
+        this.instrucciones.push(new Instruction('fsw', rs1, `${inmediato}(${rs2})`))
+    }
+
+    fcvtsw(rd, rs1) {
+        this.instrucciones.push(new Instruction('fcvt.s.w', rd, rs1))
+    }
+
+    printFloat() {
+        this.li(r.A7, 2)
+        this.ecall()
+    }
+
+    getFrameLocal(index) {
+        const frameRelativeLocal = this.objectStack.filter(obj => obj.type === 'local');
+        return frameRelativeLocal[index];
+    }
+
+    printStringLiteral(string) {
+        const stringArray = stringTo1ByteArray(string);
+        stringArray.pop(); // No queremos el 0 al final
+
+        this.comment(`Imprimiendo literal ${string}`);
+
+        stringArray.forEach((charCode) => {
+            this.li(r.A0, charCode);
+            this.printChar();
+        });
+    }
 }

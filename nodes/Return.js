@@ -1,6 +1,6 @@
 import Expression from "../abstract/Expression.js"
 
-export default class Agrupation extends Expression {
+export default class Return extends Expression {
     constructor( exp, location ) {
         super();
         this.exp = exp;
@@ -8,6 +8,6 @@ export default class Agrupation extends Expression {
     }
 
     accept(visitor) {
-        return visitor.visitAgrupation(this);
+        return visitor.visitReturn(this);
     }
 }

@@ -1,13 +1,14 @@
 import Expression from "../abstract/Expression.js"
 
 export default class UnaryOperation extends Expression {
-    constructor(operator, expr, location) {
+    constructor( exp, op, location ) {
         super();
-        this.operator = operator;
-        this.expr = expr;
+        this.exp = exp;
+        this.op = op;
         this.location = location;
     }
+
     accept(visitor) {
-        visitor.visitUnaryOperation(this);
+        return visitor.visitUnaryOperation(this);
     }
 }
