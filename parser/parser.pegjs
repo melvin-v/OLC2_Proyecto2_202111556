@@ -29,7 +29,17 @@ Declaracion =
             / dcl:FuncDcl _ { return dcl }
             / stmt:Stmt _ { return stmt }
 
-VarDcl = "var" _ id:Identificador _ "=" _ exp:Expresion _ ";" { return new Declaration(id, exp, location()) }
+VarDcl = "var" _ id:Identificador _ "=" _ exp:Expresion _ ";" { return new Declaration(id, exp, null, location()) }
+        /  "int" _ id:Identificador _  "=" _ exp:Expresion _ ";" { return new Declaration(id, exp, "int", location()) }
+        /  "float" _ id:Identificador _  "=" _ exp:Expresion _ ";" { return new Declaration(id, exp, "float", location()) }
+        /  "char" _ id:Identificador _  "=" _ exp:Expresion _ ";" { return new Declaration(id, exp, "char", location()) }
+        /  "boolean" _ id:Identificador _  "=" _ exp:Expresion _ ";" { return new Declaration(id, exp, "boolean", location()) }
+        /  "string" _ id:Identificador _  "=" _ exp:Expresion _ ";" { return new Declaration(id, exp, "string", location()) }
+        /  "int" _ id:Identificador _ ";" { return new Declaration(id, null, "int", location()) }
+        /  "float" _ id:Identificador _ ";" { return new Declaration(id, null, "float", location()) }
+        /  "char" _ id:Identificador _ ";" { return new Declaration(id, null, "char", location()) }
+        /  "boolean" _ id:Identificador _ ";" { return new Declaration(id, null, "boolean", location()) }
+        /  "string" _ id:Identificador _";" { return new Declaration(id, null, "string", location()) }
 
 FuncDcl = "function" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ tipo:(":" _ tipo:Identificador { return tipo })? _ bloque:Bloque { return new FuncDcl(id, params || [], bloque, tipo, location()) }
 
@@ -72,7 +82,7 @@ Identificador = [a-zA-Z][a-zA-Z0-9]* { return text() }
 
 Expresion = Asignacion
 
-Asignacion = asignado:Llamada _ "=" _ asgn:Asignacion { return new Assignment(asignado, asgn, location())}
+Asignacion = asignado:Identificador _ "=" _ asgn:Asignacion { return new Assignment(asignado, asgn, location())}
 / Logica
 
 
@@ -156,11 +166,13 @@ Dato =
   [0-9]+ "." [0-9]+ {return new Primitive(parseFloat(text(), 10), 'float', location()) }
   / [0-9]+ {return new Primitive(parseInt(text(), 10), 'int', location()) }
   / "\"" texto:([^\"])* "\"" { return new Primitive(texto.join(''), 'string', location()) }
+  / "'"  txt:normalChar "'" { return new Primitive(txt, 'char', location()) }
   / "true" { return new Primitive(true, 'boolean', location()) }
   / "false" { return new Primitive(false, 'boolean', location()) }
   / "(" _ exp:Expresion _ ")" { return new Agrupation(exp, location()) }
   / id:Identificador { return new ReferenceVariable(id, location()) }
 
+normalChar = [^'] { return text() }
 
 _ = ([ \t\n\r] / Comentarios)* 
 

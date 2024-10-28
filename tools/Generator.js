@@ -203,22 +203,24 @@ export class Generator {
 
             case 'string':
                 const stringArray = stringTo1ByteArray(object.valor);
-
                 this.comment(`Pushing string ${object.valor}`);
-                // this.addi(r.T0, r.HP, 4);
-                // this.push(r.T0);
                 this.push(r.HP);
-
                 stringArray.forEach((charCode) => {
                     this.li(r.T0, charCode);
-                    // this.push(r.T0);
-                    // this.addi(r.HP, r.HP, 4);
-                    // this.sw(r.T0, r.HP);
-
                     this.sb(r.T0, r.HP);
                     this.addi(r.HP, r.HP, 1);
                 });
 
+                length = 4;
+                break;
+
+            case 'char':
+                const stringArrayChar = stringTo1ByteArray(object.valor);
+                this.comment(`Pushing char ${object.valor}`);
+                this.push(r.HP);
+                this.li(r.T0, stringArrayChar[0]);
+                this.sb(r.T0, r.HP);
+                this.addi(r.HP, r.HP, 1);
                 length = 4;
                 break;
 
@@ -272,6 +274,9 @@ export class Generator {
                 break;
             case 'float':
                 this.popFloat(rd);
+                break;
+            case 'char':
+                this.pop(rd);
                 break;
             default:
                 break;
@@ -409,5 +414,15 @@ main:
             this.li(r.A0, charCode);
             this.printChar();
         });
+    }
+
+    printCharFromStack() {
+        this.pop(r.A0);
+        this.printChar();
+    }
+    printSalto() {
+        this.comment(`Imprimiendo salto de linea`);
+        this.li(r.A0, 10);
+        this.printChar();
     }
 }

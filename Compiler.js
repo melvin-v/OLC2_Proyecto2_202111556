@@ -21,13 +21,15 @@ export default class Compiler extends Visitor {
     }
 
 
-    visitExpresionStmt(node) {
+    visitExpressionStmt(node) {
         node.exp.accept(this);
-        this.code.popObject(r.T0);
+        const isFloat = this.code.getTopObject().type === 'float';
+        this.code.popObject(isFloat ? f.FA0 : r.T0);
     }
 
 
     visitPrimitive(node) {
+        console.log(node);
         this.code.comment(`Primitivo: ${node.valor}`);
         this.code.pushConstant({ type: node.tipo, valor: node.valor });
         this.code.comment(`Fin Primitivo: ${node.valor}`);
@@ -187,16 +189,17 @@ export default class Compiler extends Visitor {
     
             const isFloat = this.code.getTopObject().type === 'float';
             const object = this.code.popObject(isFloat ? f.FA0 : r.A0);
-    
             const tipoPrint = {
                 'int': () => this.code.printInt(),
                 'string': () => this.code.printString(),
                 'float': () => this.code.printFloat(),
+                'boolean': () => this.code.printBoolean(),
+                'char': () => this.code.printString(),
             }
     
             tipoPrint[object.type]();
         }
-
+        this.code.printSalto();
 
     }
 
@@ -204,7 +207,6 @@ export default class Compiler extends Visitor {
     visitDeclaration(node) {
         this.code.comment(`Declaracion Variable: ${node.id}`);
         node.exp.accept(this);
-
         if (this.insideFunction) {
             const localObject = this.code.getFrameLocal(this.frameDclIndex);
             const valueObj = this.code.popObject(r.T0);
@@ -227,9 +229,9 @@ export default class Compiler extends Visitor {
  
     visitAssignment(node) {
         this.code.comment(`Asignacion Variable: ${node.id}`);
-
         node.asgn.accept(this);
-        const valueObject = this.code.popObject(r.T0);
+        const isFloat = this.code.getTopObject().type === 'float';
+        const valueObject  = this.code.popObject(isFloat ? f.FA0 : r.T0);
         const [offset, variableObject] = this.code.getObject(node.id);
 
         if (this.insideFunction) {
@@ -245,7 +247,6 @@ export default class Compiler extends Visitor {
 
         this.code.push(r.T0);
         this.code.pushObject(valueObject);
-
         this.code.comment(`Fin Asignacion Variable: ${node.id}`);
     }
 
@@ -253,10 +254,7 @@ export default class Compiler extends Visitor {
  
     visitReferenceVariable(node) {
         this.code.comment(`Referencia a variable ${node.id}: ${JSON.stringify(this.code.objectStack)}`);
-
-
         const [offset, variableObject] = this.code.getObject(node.id);
-
         if (this.insideFunction) {
             this.code.addi(r.T1, r.FP, -variableObject.offset * 4);
             this.code.lw(r.T0, r.T1);
