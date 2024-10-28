@@ -196,6 +196,11 @@ export default class Generator {
                 });
                 break;
 
+            case 'boolean':
+                this.li(r.T0, object.valor ? 1 : 0);
+                this.push(r.T0);
+                break;
+
             default:
                 break;
         }

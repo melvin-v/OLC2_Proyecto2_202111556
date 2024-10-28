@@ -9,6 +9,7 @@
   import Assignment from '../nodes/Assignment.js';
   import ReferenceVariable from '../nodes/ReferenceVariable.js';
   import Block from '../nodes/Block.js';
+  import If from '../nodes/If.js';
   import { types as t } from '../tools/types.js';
 }}
 
@@ -36,7 +37,7 @@ Stmt = "System.out.println" _ "(" _ exp:VariasExpresiones _ ")" _ ";" { return n
     / "if" _ "(" _ cond:Expresion _ ")" _ stmtTrue:Stmt 
       stmtFalse:(
         _ "else" _ stmtFalse:Stmt { return stmtFalse } 
-      )? { return crearNodo('if', { cond, stmtTrue, stmtFalse }) }
+      )? { return new If(cond, stmtTrue, stmtFalse, location()) }
     / "while" _ "(" _ cond:Expresion _ ")" _ stmt:Stmt { return crearNodo('while', { cond, stmt }) }
     / "for" _ "(" _ init:ForInit _ cond:Expresion _ ";" _ inc:Expresion _ ")" _ stmt:Stmt {
       return crearNodo('for', { init, cond, inc, stmt })
@@ -186,6 +187,8 @@ Argumentos = arg:Expresion _ args:("," _ exp:Expresion { return exp })* { return
 
 Numero = [0-9]+ {return new Primitive(parseInt(text(), 10), t.INT, location())}
   / "\"" texto:([^\"])* "\"" { return new Primitive(texto.join(''), t.STRING, location()) }
+  / "true" { return new Primitive(true, t.BOOLEAN, location()) }
+  / "false" { return new Primitive(false, t.BOOLEAN, location()) }
   / "(" _ exp:Expresion _ ")" { return new Agrupation(exp, location()) }
   / "new" _ id:Identificador _ "(" _ args:Argumentos? _ ")" { return crearNodo('instancia', { id, args: args || [] }) }
   / id:Identificador { return new ReferenceVariable(id, location()) }

@@ -197,5 +197,37 @@ export default class Compiler extends Visitor{
         this.codeBuilder.comment('Fin de bloque');
     }
 
+    visitIf(node) {
+        console.log('If', node);
+        this.codeBuilder.comment('Inicio de If');
+
+        this.codeBuilder.comment('Condicion');
+        node.cond.accept(this);
+        this.codeBuilder.popObject(r.T0);
+        this.codeBuilder.comment('Fin de condicion');
+        const hasElse = !!node.stmtFalse
+
+        if (hasElse) {
+            const elseLabel = this.codeBuilder.getLabel();
+            const endIfLabel = this.codeBuilder.getLabel();
+
+            this.codeBuilder.beq(r.T0, r.ZERO, elseLabel);
+            this.codeBuilder.comment('Rama verdadera');
+            node.stmtTrue.accept(this);
+            this.codeBuilder.j(endIfLabel);
+            this.codeBuilder.addLabel(elseLabel);
+            this.codeBuilder.comment('Rama falsa');
+            node.stmtFalse.accept(this);
+            this.codeBuilder.addLabel(endIfLabel);
+        } else {
+            const endIfLabel = this.codeBuilder.getLabel();
+            this.codeBuilder.beq(r.T0, r.ZERO, endIfLabel);
+            this.codeBuilder.comment('Rama verdadera');
+            node.stmtTrue.accept(this);
+            this.codeBuilder.addLabel(endIfLabel);
+        }
+
+        this.codeBuilder.comment('Fin del If');
+    }
 
 };
