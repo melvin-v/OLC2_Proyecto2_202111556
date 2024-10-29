@@ -4,6 +4,7 @@ import {parse} from "./parser/parser.js";
 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0/min/vs' } });
 var errorReport = [];
 var tabla = new Map();
+var tablaFunciones = new Map();
 require(['vs/editor/editor.main'], () => {
     const editor = monaco.editor.create(document.getElementById('container'), {
         language: 'java',
@@ -16,6 +17,9 @@ require(['vs/editor/editor.main'], () => {
         console.log(sentencias);
         const compiler = new Compiler();
         sentencias.forEach(sentencia => sentencia.accept(compiler));
+        tabla = compiler.table
+        console.log(tabla);
+        tablaFunciones = compiler.functionMetada;
         document.getElementById('output').innerText = compiler.code.toString();
     });
 
@@ -59,10 +63,10 @@ require(['vs/editor/editor.main'], () => {
     });
 
     document.getElementById('symbol-table-button').addEventListener('click', () => {
-        // Vamos a generar la tabla de simbolos en html, creara el html segun el array de objetos {id, tipo de simbolo, valor, fila, columna} y lo abrira en una nueva ventana, viene un map la key sera el id y el value es un objeto que contiene el tipo y el valor
+        // Vamos a generar la tabla de simbolos en html, creara el html segun el array de objetos {id, tipo de simbolo, valor, fila, columna} y lo abrira en una nueva ventana
         let html = "<html><head><title>Tabla de simbolos</title></head><body><h1>Tabla de simbolos</h1><table border='1'><tr><th>Id</th><th>Tipo</th><th>Valor</th><th>Fila</th><th>Columna</th></tr>";
-        tabla.forEach((value, key) => {
-            html += "<tr><td>" + key + "</td><td>" + value.type + "</td><td>" + value.value + "</td><td>" + value.linea + "</td><td>" + value.columna + "</td></tr>";
+        tabla.forEach(entry => {
+            html += "<tr><td>" + entry.id + "</td><td>" + entry.tipo + "</td><td>" + entry.valor + "</td><td>" + entry.fila + "</td><td>" + entry.columna + "</td></tr>";
         });
         html += "</table></body></html>";
         const report = window.open();

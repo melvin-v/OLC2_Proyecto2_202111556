@@ -18,6 +18,7 @@ export default class Compiler extends Visitor {
         this.insideFunction = false;
         this.frameDclIndex = 0;
         this.returnLabel = null;
+        this.table = [];
     }
 
 
@@ -240,6 +241,7 @@ export default class Compiler extends Visitor {
 
   
     visitDeclaration(node) {
+        this.table.push({ id: node.id, tipo: node.tipo, valor: node.exp.valor, fila: node.location.start.line, columna: node.location.start.column });
         this.code.comment(`Declaracion Variable: ${node.id}`);
         node.exp.accept(this);
         if (this.insideFunction) {
@@ -491,7 +493,6 @@ export default class Compiler extends Visitor {
    
     visitFuncDcl(node) {
         const baseSize = 2; // | ra | fp |
-        console.log(node)
         const paramSize = node.params.length; // | ra | fp | p1 | p2 | ... | pn |
 
         const frameVisitor = new FrameVisitor(baseSize + paramSize);
@@ -502,7 +503,6 @@ export default class Compiler extends Visitor {
         const returnSize = 1; // | ra | fp | p1 | p2 | ... | pn | l1 | l2 | ... | ln | rv |
 
         const totalSize = baseSize + paramSize + localSize + returnSize;
-        console.log(node.tipo)
         this.functionMetada[node.id] = {
             frameSize: totalSize,
             returnType: node.tipo,
@@ -633,7 +633,6 @@ export default class Compiler extends Visitor {
 
 
         this.code.push(r.A0)
-        console.log(nombreFuncion)
         this.code.pushObject({ type: this.functionMetada[nombreFuncion].returnType, length: 4 })
 
         this.code.comment(`Fin de llamada a funcion ${nombreFuncion}`);
