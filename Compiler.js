@@ -141,7 +141,15 @@ export default class Compiler extends Visitor {
                 this.code.push(r.T0);
                 break;
             case '/':
+                const divZeroLabel = this.code.getLabel();
+                const divEndLabel = this.code.getLabel();
+                this.code.beq(r.T0, r.ZERO, divZeroLabel); // Check if divisor is zero
                 this.code.div(r.T0, r.T1, r.T0);
+                this.code.j(divEndLabel);
+                this.code.addLabel(divZeroLabel);
+                this.code.li(r.T0, 0); // Handle division by zero (set result to 0 or any other logic)
+                this.code.printStringLiteral('Null');
+                this.code.addLabel(divEndLabel);
                 this.code.push(r.T0);
                 break;
             case '%':
@@ -183,10 +191,16 @@ export default class Compiler extends Visitor {
 
         switch (node.op) {
             case '-':
-                this.code.li(r.T1, 0);
-                this.code.sub(r.T0, r.T1, r.T0);
-                this.code.push(r.T0);
-                this.code.pushObject({ type: 'int', length: 4 });
+                if (isFloat) {
+                    this.code.fneg_s(f.FT1, f.FT0);    // Negación de valor flotante en FT0 y almacenamiento en FT1
+                    this.code.push(r.FT1);             // Empuja el resultado flotante negado en FT1 a la pila
+                    this.code.pushObject({ type: 'float', length: 4 }); // Indica que es un float de 4 bytes
+                } else {
+                    this.code.li(r.T1, 0);
+                    this.code.sub(r.T0, r.T1, r.T0);
+                    this.code.push(r.T0);
+                    this.code.pushObject({ type: 'int', length: 4 });
+                }
                 break;
             case '!':
                 this.code.seqz(r.T0, r.T0);
@@ -217,8 +231,8 @@ export default class Compiler extends Visitor {
                 'boolean': () => this.code.printBoolean(),
                 'char': () => this.code.printString(),
             }
-    
             tipoPrint[object.type]();
+            
         }
         this.code.printSalto();
 
@@ -477,7 +491,7 @@ export default class Compiler extends Visitor {
    
     visitFuncDcl(node) {
         const baseSize = 2; // | ra | fp |
-
+        console.log(node)
         const paramSize = node.params.length; // | ra | fp | p1 | p2 | ... | pn |
 
         const frameVisitor = new FrameVisitor(baseSize + paramSize);
@@ -488,6 +502,7 @@ export default class Compiler extends Visitor {
         const returnSize = 1; // | ra | fp | p1 | p2 | ... | pn | l1 | l2 | ... | ln | rv |
 
         const totalSize = baseSize + paramSize + localSize + returnSize;
+        console.log(node.tipo)
         this.functionMetada[node.id] = {
             frameSize: totalSize,
             returnType: node.tipo,
@@ -618,6 +633,7 @@ export default class Compiler extends Visitor {
 
 
         this.code.push(r.A0)
+        console.log(nombreFuncion)
         this.code.pushObject({ type: this.functionMetada[nombreFuncion].returnType, length: 4 })
 
         this.code.comment(`Fin de llamada a funcion ${nombreFuncion}`);

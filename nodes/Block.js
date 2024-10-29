@@ -9,6 +9,7 @@ export default class Block extends Expression {
     }
 
     accept(visitor) {
+
         return visitor.visitBlock(this);
     }
 

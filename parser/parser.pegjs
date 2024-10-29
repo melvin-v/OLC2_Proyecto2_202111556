@@ -18,6 +18,8 @@
   import FuncDcl from '../nodes/FuncDcl.js';
   import Param from '../nodes/Param.js';
   import Call from '../nodes/Call.js';
+  import Case from '../nodes/Case.js';
+  import Switch from '../nodes/Switch.js';
   import { types as t } from '../tools/types.js';
 }}
 
@@ -41,7 +43,12 @@ VarDcl = "var" _ id:Identificador _ "=" _ exp:Expresion _ ";" { return new Decla
         /  "boolean" _ id:Identificador _ ";" { return new Declaration(id, null, "boolean", location()) }
         /  "string" _ id:Identificador _";" { return new Declaration(id, null, "string", location()) }
 
-FuncDcl = "function" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ tipo:(":" _ tipo:Identificador { return tipo })? _ bloque:Bloque { return new FuncDcl(id, params || [], bloque, tipo, location()) }
+      FuncDcl = "void" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ bloque:Bloque { return new FuncDcl(id, params || [], bloque, 'void', location()) }
+        / "int" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ bloque:Bloque { return new FuncDcl(id, params || [], bloque, 'int', location()) }
+        / "float" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ bloque:Bloque { return new FuncDcl(id, params || [], bloque, 'float', location()) }
+        / "char" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ bloque:Bloque { return new FuncDcl(id, params || [], bloque, 'char', location()) }
+        / "boolean" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ bloque:Bloque { return new FuncDcl(id, params || [], bloque, 'boolean', location()) }
+        / "string" _ id:Identificador _ "(" _ params:Parametros? _ ")" _ bloque:Bloque { return new FuncDcl(id, params || [], bloque, 'string', location()) }
 
 ClassDcl = "class" _ id:Identificador _ "{" _ dcls:ClassBody* _ "}" 
 
@@ -50,9 +57,15 @@ ClassBody = dcl:VarDcl _ { return dcl }
 
 Parametros = id:Param _ params:("," _ ids:Param { return ids })* { return [id, ...params] }
 
-Param = id:Identificador _ ":" _ tipo:Identificador { return new Param(id, tipo, location()) }
+Param = "int" _ id:Identificador { return new Param(id, "int", location()) }
+  / "float" _ id:Identificador { return new Param(id, "float", location()) }
+  / "char" _ id:Identificador { return new Param(id, "char", location()) }
+  / "boolean" _ id:Identificador { return new Param(id, "boolean", location()) }
+  / "string" _ id:Identificador { return new Param(id, "string", location()) }
 
 Stmt = "System.out.println" _ "(" _ exp:VariasExpresiones _ ")" _ ";" { return new Print(exp, location()) }
+      / "switch" _ "(" _ exp:Expresion _ ")" _ "{" _ cases:(_ "case" _ exp1:Expresion _ ":" _ stmt:(Stmt)* _ breakForSwitch:("break" _ ";" {return new Break(location())})* { return new Case(exp1, stmt, breakForSwitch, location()) })+
+      stmt:( _ "default" _ ":" _ stmt:Stmt{return stmt})? _ "}" { return new Switch(exp, cases, stmt, location()) }
     / Bloque:Bloque { return Bloque }
     / "if" _ "(" _ cond:Expresion _ ")" _ stmtTrue:Stmt 
       stmtFalse:(

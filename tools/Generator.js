@@ -126,6 +126,13 @@ export class Generator {
         this.instrucciones.push(new Instruction('seqz', rd, rs1))
     }
 
+    feqz(rd, rs1) {
+        this.instrucciones.push(new Instruction('feqz', rd, rs1))
+    }
+    fneg_s(rd, rs1) {
+        this.instrucciones.push(new Instruction('fneg.s', rd, rs1))
+    }
+
     jal(label) {
         this.instrucciones.push(new Instruction('jal', label))
     }
@@ -147,7 +154,6 @@ export class Generator {
     }
 
     callBuiltin(builtinName) {
-        console.log(builtins)
         if (!builtins[builtinName]) {
             throw new Error(`Builtin ${builtinName} not found`)
         }

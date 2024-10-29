@@ -6,13 +6,13 @@ export class FrameVisitor {
         this.baseOffset = baseOffset;
     }
 
-    visitExpresion(node) { }
-    visitOperacionBinaria(node) { }
-    visitOperacionUnaria(node) { }
-    visitAgrupacion(node) { }
-    visitPrimitivo(node) { }
+    visitExpression(node) { }
+    visitBinaryOperation(node) { }
+    visitUnaryOperation(node) { }
+    visitAgrupation(node) { }
+    visitPrimitive(node) { }
 
-    visitDeclaracionVariable(node) {
+    visitDeclaration(node) {
         this.frame.push({
             id: node.id,
             offset: this.baseOffset + this.localSize,
@@ -20,12 +20,12 @@ export class FrameVisitor {
         this.localSize += 1;
     }
 
-    visitReferenciaVariable(node) { }
+    visitReferenceVariable(node) { }
     visitPrint(node) { }
-    visitExpresionStmt(node) { }
-    visitAsignacion(node) { }
+    visitExpressionStmt(node) { }
+    visitAssignment(node) { }
 
-    visitBloque(node) {
+    visitBlock(node) {
         node.dcls.forEach(dcl => dcl.accept(this));
     }
 
