@@ -29,7 +29,6 @@ export default class Compiler extends Visitor {
 
 
     visitPrimitive(node) {
-        console.log(node);
         this.code.comment(`Primitivo: ${node.valor}`);
         this.code.pushConstant({ type: node.tipo, valor: node.valor });
         this.code.comment(`Fin Primitivo: ${node.valor}`);
@@ -153,6 +152,22 @@ export default class Compiler extends Visitor {
                 this.code.callBuiltin('lessOrEqual');
                 this.code.pushObject({ type: 'boolean', length: 4 });
                 return
+            case '>=':
+                this.code.callBuiltin('greaterOrEqual');
+                this.code.pushObject({ type: 'boolean', length: 4 });
+                return
+            case '<':
+                this.code.callBuiltin('less');
+                this.code.pushObject({ type: 'boolean', length: 4 });
+                return
+            case '>':
+                this.code.callBuiltin('greater');
+                this.code.pushObject({ type: 'boolean', length: 4 });
+                return
+            case '!=':
+                this.code.callBuiltin('notEqual');
+                this.code.pushObject({ type: 'boolean', length: 4 });
+                return
             case '==':
                 this.code.callBuiltin('equal');
                 this.code.pushObject({ type: 'boolean', length: 4 });
@@ -163,8 +178,8 @@ export default class Compiler extends Visitor {
 
     visitUnaryOperation(node) {
         node.exp.accept(this);
-
-        this.code.popObject(r.T0);
+        const isFloat = this.code.getTopObject().type === 'float';
+        this.code.popObject(isFloat ? f.FA0 : r.T0);
 
         switch (node.op) {
             case '-':
@@ -172,6 +187,11 @@ export default class Compiler extends Visitor {
                 this.code.sub(r.T0, r.T1, r.T0);
                 this.code.push(r.T0);
                 this.code.pushObject({ type: 'int', length: 4 });
+                break;
+            case '!':
+                this.code.seqz(r.T0, r.T0);
+                this.code.push(r.T0);
+                this.code.pushObject({ type: 'boolean', length: 4 });
                 break;
         }
 
@@ -186,9 +206,10 @@ export default class Compiler extends Visitor {
         for (const exp of node.exps) {
             this.code.comment('Print');
             exp.accept(this);
-    
+
             const isFloat = this.code.getTopObject().type === 'float';
             const object = this.code.popObject(isFloat ? f.FA0 : r.A0);
+
             const tipoPrint = {
                 'int': () => this.code.printInt(),
                 'string': () => this.code.printString(),

@@ -50,6 +50,62 @@ export const lessOrEqual = (code) => {
     code.addLabel(endLabel)
 }
 
+export const greaterOrEqual = (code) => {
+    
+        const trueLabel = code.getLabel()
+        const endLabel = code.getLabel()
+    
+        code.ble(r.T0, r.T1, trueLabel) 
+        code.li(r.T0, 0)
+        code.push(r.T0)
+        code.j(endLabel)
+        code.addLabel(trueLabel)
+        code.li(r.T0, 1)
+        code.push(r.T0)
+        code.addLabel(endLabel)
+    }
+
+export const greater = (code) => {
+        
+            const trueLabel = code.getLabel()
+            const endLabel = code.getLabel()
+        
+            code.blt(r.T0, r.T1, trueLabel) 
+            code.li(r.T0, 0)
+            code.push(r.T0)
+            code.j(endLabel)
+            code.addLabel(trueLabel)
+            code.li(r.T0, 1)
+            code.push(r.T0)
+            code.addLabel(endLabel)
+        }
+export const less = (code) => {
+    const trueLabel = code.getLabel()
+    const endLabel = code.getLabel()
+
+    code.bge(r.T0, r.T1, trueLabel)
+    code.li(r.T0, 0)
+    code.push(r.T0)
+    code.j(endLabel)
+    code.addLabel(trueLabel)
+    code.li(r.T0, 1)
+    code.push(r.T0)
+    code.addLabel(endLabel)
+}
+
+export const notEqual = (code) => {
+    const trueLabel = code.getLabel()
+    const endLabel = code.getLabel()
+
+    code.beq(r.T0, r.T1, trueLabel) 
+    code.li(r.T0, 0)
+    code.push(r.T0)
+    code.j(endLabel)
+    code.addLabel(trueLabel)
+    code.li(r.T0, 1)
+    code.push(r.T0)
+    code.addLabel(endLabel)
+}
 
 export const equal = (code) => {
     const trueLabel = code.getLabel()
@@ -207,5 +263,9 @@ export const builtins = {
     lessOrEqual,
     equal,
     parseInt,
-    parseFloat
+    parseFloat,
+    greaterOrEqual,
+    greater,
+    less,
+    notEqual
 }

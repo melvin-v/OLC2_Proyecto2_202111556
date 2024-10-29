@@ -100,7 +100,7 @@ Logica = izq:Comparacion expansion:(
 
 
 Comparacion = izq:Suma expansion:(
-  _ op:("<=" / "==") _ der:Suma { return { tipo: op, der } }
+  _ op:("<=" / ">=" /  "<" / ">" / "==" / "!=") _ der:Suma { return { tipo: op, der } }
 )* { 
   return expansion.reduce(
     (operacionAnterior, operacionActual) => {

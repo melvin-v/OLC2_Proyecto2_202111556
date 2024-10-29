@@ -91,6 +91,10 @@ export class Generator {
         this.instrucciones.push(new Instruction('bge', rs1, rs2, label))
     }
 
+    ble(rs1, rs2, label) {
+        this.instrucciones.push(new Instruction('ble', rs1, rs2, label))
+    }
+
     li(rd, inmediato) {
         this.instrucciones.push(new Instruction('li', rd, inmediato))
     }
@@ -118,6 +122,10 @@ export class Generator {
         this.addi(r.SP, r.SP, 4)
     }
 
+    seqz(rd, rs1) {
+        this.instrucciones.push(new Instruction('seqz', rd, rs1))
+    }
+
     jal(label) {
         this.instrucciones.push(new Instruction('jal', label))
     }
@@ -139,6 +147,7 @@ export class Generator {
     }
 
     callBuiltin(builtinName) {
+        console.log(builtins)
         if (!builtins[builtinName]) {
             throw new Error(`Builtin ${builtinName} not found`)
         }
@@ -167,6 +176,24 @@ export class Generator {
         this.ecall()
     }
 
+
+
+    printBoolean(rd = r.A0) {
+        const trueLabel = this.getLabel();
+        const endLabel = this.getLabel();
+
+        this.bne(rd, r.ZERO, trueLabel);
+
+        // Print "false"
+        this.printStringLiteral("false");
+        this.j(endLabel);
+
+        // Print "true"
+        this.addLabel(trueLabel);
+        this.printStringLiteral("true");
+
+        this.addLabel(endLabel);
+    }
     printString(rd = r.A0) {
 
         if (rd !== r.A0) {
